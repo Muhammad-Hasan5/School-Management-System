@@ -1,23 +1,23 @@
-from PyQt6.QtWidgets import QApplication, QVBoxLayout, QLabel, QWidget, \
-    QGridLayout, QLineEdit, QPushButton, QMainWindow, QTableWidget, \
-    QTableWidgetItem, QDialog, QComboBox
-from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QApplication, QVBoxLayout, \
+    QLineEdit, QPushButton, QMainWindow, QTableWidget, \
+    QTableWidgetItem, QDialog, QComboBox, QToolBar
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtCore import Qt
 import sqlite3
 import sys
-
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("School Management System")
+        self.setMinimumSize(800, 600)
 
         file_menu_item = self.menuBar().addMenu("&File")
         help_menu_item = self.menuBar().addMenu("&Help")
         edit_menu_item = self.menuBar().addMenu("&Edit")
 
-        add_student_action = QAction("Add student", self)
+        add_student_action = QAction(QIcon("add.png"), "Add student", self)
         add_student_action.triggered.connect(self.insert)
         file_menu_item.addAction(add_student_action)
 
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         help_menu_item.addAction(about_action)
         about_action.setMenuRole(QAction.MenuRole.NoRole)
 
-        search_action = QAction("Search", self)
+        search_action = QAction(QIcon("search.png"), "Search", self)
         edit_menu_item.addAction(search_action)
         search_action.triggered.connect(self.search)
         self.table = QTableWidget()
@@ -33,6 +33,12 @@ class MainWindow(QMainWindow):
         self.table.setHorizontalHeaderLabels(('ID', 'Name', 'Course', 'Mobile'))
         self.table.verticalHeader().setVisible(False)
         self.setCentralWidget(self.table)
+
+        toolbar = QToolBar()
+        toolbar.setMovable(True)
+        self.addToolBar(toolbar)
+        toolbar.addAction(add_student_action)
+        toolbar.addAction(search_action)
 
 
     def load_data(self):
@@ -43,7 +49,8 @@ class MainWindow(QMainWindow):
         for row_number, row_data in enumerate(result):
             self.table.insertRow(row_number)
             for col_number, col_data in enumerate(row_data):
-                self.table.setItem(row_number, col_number, QTableWidgetItem(str(col_data)))
+                self.table.setItem(row_number, col_number,
+                                   QTableWidgetItem(str(col_data)))
         connection.close()
 
 
@@ -55,7 +62,6 @@ class MainWindow(QMainWindow):
     def search(self):
         search = SearchDialog()
         search.exec()
-
 
 
 class InsertDialog(QDialog):
@@ -86,13 +92,15 @@ class InsertDialog(QDialog):
 
         self.setLayout(layout)
 
+
     def add_student(self):
         name = self.student_name.text()
         course = self.course_name.itemText(self.course_name.currentIndex())
         mobile = self.mobile.text()
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (?, ?, ?)",
+        cursor.execute("INSERT INTO students (name, course, mobile)"
+                           " VALUES (?, ?, ?)",
                        (name, course, mobile))
         connection.commit()
         cursor.close()
@@ -124,10 +132,12 @@ class SearchDialog(QDialog):
         name = self.student_name.text()
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
-        result = cursor.execute("SELECT * FROM students WHERE name = ?",
+        result = cursor.execute("SELECT * FROM students "
+                                    "WHERE name = ?",
                                 (name,))
         rows = list(result)
-        items = sms.table.findItems(name, Qt.MatchFlag.MatchFixedString)
+        items = sms.table.findItems(name,
+                                    Qt.MatchFlag.MatchFixedString)
 
         for item in items:
             sms.table.item(item.row(), 1).setSelected(True)
